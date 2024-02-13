@@ -15,5 +15,5 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
   },
-  "include": ["./vite.config.ts", "./src"],
+  "include": ["./vite.config.ts"],
 }

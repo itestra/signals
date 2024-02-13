@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["vitest/globals"],
     "target": "ES6",
     "skipLibCheck": true,
 
@@ -19,6 +20,5 @@
     "declarationMap": true,
   },
   "include": ["./src"],
-  "exclude": ["./src/**/*.test.*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
