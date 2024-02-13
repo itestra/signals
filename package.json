@@ -1,0 +1,20 @@
+{
+  "name": "signals",
+  "version": "0.1.0",
+  "author": "itestra GmbH",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.15",
+    "prettier": "^3.2.5",
+    "typescript": "~5.3.3",
+    "vite": "^5.1.1",
+    "vite-plugin-checker": "^0.6.4",
+    "vite-plugin-dts": "^3.7.2",
+    "vitest": "^1.2.2"
+  }
+}

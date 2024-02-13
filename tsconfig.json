@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+  },
+  "include": ["./src"],
+  "exclude": ["./src/**/*.test.*"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

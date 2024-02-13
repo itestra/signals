@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "types": ["vitest/globals", "node"],
+    "target": "ES2021",
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+  },
+  "include": ["./vite.config.ts", "./src"],
+}
