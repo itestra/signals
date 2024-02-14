@@ -204,9 +204,12 @@ interface ExecutionContext {
   sourceIndex: number
 }
 
+const UPDATE_0: UpdateSeqNumber = 0
+const NO_BATCH: BatchSeqNumber = -1
+
 const G: Globals = {
-  updateSeqNumber: 0,
-  batchSeqNumber: 0,
+  updateSeqNumber: UPDATE_0,
+  batchSeqNumber: NO_BATCH,
   executionContext: {
     sink: null,
     sourceIndex: 0,
@@ -228,8 +231,8 @@ function createDerivedNode<T>(derive: () => T): DerivedNode<T> {
     cachedValue: UNINITIALIZED,
     sinks: new Set(),
     sources: [],
-    cachesValidInUpdate: 0,
-    notifiedInBatch: 0,
+    cachesValidInUpdate: UPDATE_0,
+    notifiedInBatch: NO_BATCH,
     running: false,
     previousExecutionContext: { sink: null, sourceIndex: 0 },
   }
@@ -240,8 +243,8 @@ function createSubscriberNode(notify: () => void): SubscriberNode {
     type: NodeType.SUBSCRIBER,
     notify,
     sources: [],
-    cachesValidInUpdate: 0,
-    notifiedInBatch: 0,
+    cachesValidInUpdate: UPDATE_0,
+    notifiedInBatch: NO_BATCH,
     running: false,
     previousExecutionContext: { sink: null, sourceIndex: 0 },
     tracking: true,
@@ -251,9 +254,10 @@ function createSubscriberNode(notify: () => void): SubscriberNode {
 
 function setValue<T>(source: ValueNode<T>, value: T): void {
   if (source.value === value) return
+  // start batch before doing anything else to be consistent with batch(() => { ... }) behavior
+  const batchStarted = startBatch()
   source.value = value
   G.updateSeqNumber++
-  const batchStarted = startBatch()
   notifySubscribers(source)
   if (batchStarted) {
     commitBatch()
@@ -360,13 +364,13 @@ function notifySubscribers(source: SourceNode<unknown>) {
 }
 
 function startBatch(): boolean {
-  if (G.batchSeqNumber > 0) return false
+  if (G.batchSeqNumber !== NO_BATCH) return false
   G.batchSeqNumber = G.updateSeqNumber
   return true
 }
 
 function commitBatch() {
-  G.batchSeqNumber = 0
+  G.batchSeqNumber = NO_BATCH
   Effect.runEffects()
   ChangeNotifier.pushNotifications()
 }
