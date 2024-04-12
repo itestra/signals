@@ -135,12 +135,14 @@ interface Sink {
   running: boolean
 }
 
+const ERROR_VALUE = Symbol()
+
 /** Link between a source and sink node. */
 interface Dependency<T> {
   source: SourceNode<T>
   sink: SinkNode
   /** Value of the source node at the time when the sink node last validated this dependency.  */
-  cachedValue: T
+  cachedValue: T | typeof ERROR_VALUE
 }
 
 const enum NodeType {
@@ -269,14 +271,28 @@ function getValueUntracked<T>(source: SourceNode<T>): T {
     return source.value
   }
   if (source.cachedValue === UNINITIALIZED || isStale(source)) {
-    source.cachedValue = runInContext(source, source.derive)
+    try {
+      source.cachedValue = runInContext(source, source.derive)
+    } catch (e) {
+      source.cachedValue = UNINITIALIZED
+      throw e
+    }
   }
   return source.cachedValue
 }
 
 function getValueTracked<T>(source: SourceNode<T>): T {
-  const value = getValueUntracked(source)
+  try {
+    const value = getValueUntracked(source)
+    trackDependency(source, value)
+    return value
+  } catch (e) {
+    trackDependency(source, ERROR_VALUE)
+    throw e
+  }
+}
 
+function trackDependency<T>(source: SourceNode<T>, value: T | typeof ERROR_VALUE): void {
   if (G.executionContext.sink && isTracking(G.executionContext.sink)) {
     const { sink, sourceIndex } = G.executionContext
 
@@ -300,22 +316,27 @@ function getValueTracked<T>(source: SourceNode<T>): T {
 
     G.executionContext.sourceIndex++
   }
-
-  return value
 }
 
 function isStale(sink: SinkNode): boolean {
-  const stale =
-    sink.cachesValidInUpdate < G.updateSeqNumber &&
-    sink.sources.some(
-      (dependency) => dependency.cachedValue !== getValueUntracked(dependency.source),
-    )
+  const stale = sink.cachesValidInUpdate < G.updateSeqNumber && sink.sources.some(isDependencyStale)
 
   if (!stale) {
     sink.cachesValidInUpdate = G.updateSeqNumber
   }
 
   return stale
+}
+
+function isDependencyStale<T>(dependency: Dependency<T>): boolean {
+  try {
+    return (
+      dependency.cachedValue === ERROR_VALUE ||
+      dependency.cachedValue !== getValueUntracked(dependency.source)
+    )
+  } catch (e) {
+    return true
+  }
 }
 
 function isTracking(sink: SinkNode): boolean {

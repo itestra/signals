@@ -207,6 +207,20 @@ describe('derived', () => {
 
     expect(callback.mock.calls).toEqual([[3]])
   })
+
+  it('should recover from errors', () => {
+    const dependency = atom(false)
+    const subject = derivedAtom(() => {
+      if (dependency.current) throw new Error()
+    })
+
+    expect(() => subject.current).not.toThrow(Error)
+
+    dependency.current = true
+
+    expect(() => subject.current).toThrow(Error)
+    expect(() => subject.current).toThrow(Error)
+  })
 })
 
 describe('effect', () => {
@@ -320,5 +334,83 @@ describe('effect', () => {
         dependency.current = !dependency.current
       })
     }).toThrow()
+  })
+
+  it('should recover from errors in derived atoms (1)', () => {
+    const dependency = atom(true)
+    const derivedDependency = derivedAtom(() => {
+      if (dependency.current) {
+        throw new Error()
+      } else {
+        return dependency.current
+      }
+    })
+
+    const callback = vi.fn((value: unknown) => void value)
+
+    effect(() => {
+      try {
+        callback(derivedDependency.current)
+      } catch (e) {
+        // ignore
+      }
+    })
+
+    dependency.current = false
+    dependency.current = true
+    dependency.current = false
+
+    expect(callback.mock.calls).toEqual([[false], [false]])
+  })
+
+  it('should recover from errors in derived atoms (2)', () => {
+    const dependency = atom(false)
+    const derivedDependency = derivedAtom(() => {
+      if (dependency.current) {
+        throw new Error()
+      } else {
+        return dependency.current
+      }
+    })
+
+    const callback = vi.fn((value: unknown) => void value)
+
+    effect(() => {
+      try {
+        callback(derivedDependency.current)
+      } catch (e) {
+        // ignore
+      }
+    })
+
+    dependency.current = true
+    dependency.current = false
+
+    expect(callback.mock.calls).toEqual([[false], [false]])
+  })
+
+  it('should recover from errors in derived atoms (3)', () => {
+    const dependency = atom(true)
+    const derivedDependency = derivedAtom(() => {
+      if (dependency.current) {
+        throw new Error()
+      } else {
+        return undefined
+      }
+    })
+
+    const callback = vi.fn((value: unknown) => void value)
+
+    effect(() => {
+      try {
+        callback(derivedDependency.current)
+      } catch (e) {
+        // ignore
+      }
+    })
+
+    dependency.current = false
+
+    expect(callback.mock.calls).toEqual([[undefined]])
   })
 })
