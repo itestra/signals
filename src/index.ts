@@ -20,9 +20,9 @@ export interface Signal<T> extends ReadonlySignal<T> {
 }
 
 export function signal<T>(): Signal<T | undefined>
-export function signal<T>(value: T): Signal<T>
-export function signal<T>(value?: T): Signal<T | undefined> {
-  return new SignalImpl(createValueNode(value))
+export function signal<T>(value: T, debug?: string): Signal<T>
+export function signal<T>(value?: T, debug?: string): Signal<T | undefined> {
+  return new SignalImpl(createValueNode(value, debug ?? getStackInfo()))
 }
 
 /**
@@ -34,8 +34,8 @@ export function signal<T>(value?: T): Signal<T | undefined> {
  *   return `Hello, ${name.current}.`
  * })
  */
-export function derived<T>(derive: () => T): ReadonlySignal<T> {
-  return new SignalImpl(createDerivedNode(derive))
+export function derived<T>(derive: () => T, debug?: string): ReadonlySignal<T> {
+  return new SignalImpl(createDerivedNode(derive, debug ?? getStackInfo()))
 }
 
 export type CleanupFn = () => void
@@ -115,6 +115,7 @@ export function untracked<T>(body: () => T): T {
 interface Source<T> {
   /** Subscribed sinks which must be notified whenever the value of this source changes. */
   readonly sinks: Set<Dependency<T>>
+  readonly debug?: string
 }
 
 /** Consumes some values */
@@ -218,15 +219,16 @@ const G: Globals = {
   },
 }
 
-function createValueNode<T>(value: T): ValueNode<T> {
+function createValueNode<T>(value: T, debug?: string): ValueNode<T> {
   return {
     type: NodeType.VALUE,
     value,
     sinks: new Set(),
+    debug,
   }
 }
 
-function createDerivedNode<T>(derive: () => T): DerivedNode<T> {
+function createDerivedNode<T>(derive: () => T, debug?: string): DerivedNode<T> {
   return {
     type: NodeType.DERIVED,
     derive,
@@ -237,6 +239,7 @@ function createDerivedNode<T>(derive: () => T): DerivedNode<T> {
     notifiedInBatch: NO_BATCH,
     running: false,
     previousExecutionContext: { sink: null, sourceIndex: 0 },
+    debug,
   }
 }
 
@@ -297,7 +300,7 @@ function trackDependency<T>(source: SourceNode<T>, value: T | typeof ERROR_VALUE
     const { sink, sourceIndex } = G.executionContext
 
     if (sink.sources.length <= sourceIndex) {
-      const dependency = { sink, source, cachedValue: value, lastChecked: G.updateSeqNumber }
+      const dependency = { sink, source, cachedValue: value }
       sink.sources[sourceIndex] = dependency
 
       if (isSubscribed(sink)) {
@@ -624,6 +627,10 @@ export class ChangeNotifier {
     leaveExecutionContext(this.node)
   }
 
+  getDebug() {
+    return this.node.sources.map((dependency) => dependency.source.debug)
+  }
+
   static pushNotifications() {
     if (this.running) return
     this.running = true
@@ -657,6 +664,16 @@ export class ChangeNotifier {
 
     if (loop) {
       throw new Error('Looping notifiers detected')
+    }
+  }
+}
+
+function getStackInfo() {
+  if (process?.env?.NODE_ENV === 'development') {
+    try {
+      throw new Error()
+    } catch (e) {
+      return (e as Error).stack?.split('\n').slice(1).join('\n')
     }
   }
 }

@@ -209,8 +209,8 @@ describe('derived', () => {
   })
 
   it('should recover from errors', () => {
-    const dependency = atom(false)
-    const subject = derivedAtom(() => {
+    const dependency = signal(false)
+    const subject = derived(() => {
       if (dependency.current) throw new Error()
     })
 
@@ -337,8 +337,8 @@ describe('effect', () => {
   })
 
   it('should recover from errors in derived atoms (1)', () => {
-    const dependency = atom(true)
-    const derivedDependency = derivedAtom(() => {
+    const dependency = signal(true)
+    const derivedDependency = derived(() => {
       if (dependency.current) {
         throw new Error()
       } else {
@@ -364,8 +364,8 @@ describe('effect', () => {
   })
 
   it('should recover from errors in derived atoms (2)', () => {
-    const dependency = atom(false)
-    const derivedDependency = derivedAtom(() => {
+    const dependency = signal(false)
+    const derivedDependency = derived(() => {
       if (dependency.current) {
         throw new Error()
       } else {
@@ -390,8 +390,8 @@ describe('effect', () => {
   })
 
   it('should recover from errors in derived atoms (3)', () => {
-    const dependency = atom(true)
-    const derivedDependency = derivedAtom(() => {
+    const dependency = signal(true)
+    const derivedDependency = derived(() => {
       if (dependency.current) {
         throw new Error()
       } else {
